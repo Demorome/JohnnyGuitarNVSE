@@ -287,7 +287,7 @@ bool Cmd_SetJohnnyOnAddPerkEventHandler_Execute(COMMAND_ARGS)
 	Script* script = NULL;
 	EventFilter_OneForm filter;
 	UInt32 flags = 0;
-	if (!(ExtractArgsEx(EXTRACT_ARGS_EX, &setOrRemove, &script, &flags, &filter) || NOT_TYPE(script, Script))) return true;
+	if (!(ExtractArgsEx(EXTRACT_ARGS_EX, &setOrRemove, &script, &flags, &filter.form) || NOT_TYPE(script, Script))) return true;
 	{
 		if (OnAddPerkHandler)
 		{
@@ -453,7 +453,7 @@ bool Cmd_SetJohnnyOnRenderUpdateEventHandler_Execute(COMMAND_ARGS)
 
 void HandleEventHooks()
 {
-	//todo: move to C++20 and use `using enum` for the BaseEvenInfo flag enum. 
+	//todo: move to C++20 and use `using enum` for the BaseEvenInfo flag enum.
 	OnDyingHandler = JGCreateEvent<EventFilter_OneForm>("OnDying", 1, (BaseEventInformation::eFlag_FlushOnLoad));
 	OnStartQuestHandler = JGCreateEvent<EventFilter_OneForm>("OnStartQuest", 1);
 	OnStopQuestHandler = JGCreateEvent<EventFilter_OneForm>("OnStopQuest", 1);
@@ -466,9 +466,9 @@ void HandleEventHooks()
 	OnSettingsUpdateHandler = JGCreateEvent<EventFilter_Null>("OnSettingsUpdate", 0);
 	OnAddPerkHandler = JGCreateEvent<EventFilter_OneForm>("OnAddPerk", 3);
 	OnRemovePerkHandler = JGCreateEvent<EventFilter_OneForm>("OnRemovePerk", 1);
-	
+
 	FunctionCallScript = g_scriptInterface->CallFunction;
-	
+
 	WriteRelCall(0x55678A, (UINT)HandleSeenDataUpdateEvent);
 	WriteRelCall(0x557053, (UINT)HandleSeenDataUpdateEvent);
 	WriteRelJump(0x89F4A4, (UINT)OnDyingEventAsm);

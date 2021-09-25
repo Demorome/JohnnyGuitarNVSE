@@ -94,6 +94,7 @@ void MessageHandler(NVSEMessagingInterface::Message* msg)
 		g_currentSky = (Sky**)0x11DEA20;
 		g_gameTimeGlobals = (GameTimeGlobals*)0x11DE7B8;
 		g_VATSCameraData = (VATSCameraData*)0x11F2250;
+		g_initialTickCount = GetTickCount();
 		break;
 	}
 	default:
@@ -110,7 +111,7 @@ extern "C" {
 		gLog.Open("JohnnyGuitarNVSE.log");
 		info->infoVersion = PluginInfo::kInfoVersion;
 		info->name = "JohnnyGuitarNVSE";
-		info->version = 400;
+		info->version = 410;
 
 		if (nvse->isNogore)
 		{
@@ -119,7 +120,7 @@ extern "C" {
 		}
 		int version = nvse->nvseVersion;
 		double s_nvseVersion = (version >> 24) + (((version >> 16) & 0xFF) * 0.1) + (((version & 0xFF) >> 4) * 0.01);
-		if (version < 0x6010000)
+		if (version < 0x6020030)
 		{
 			_ERROR("NVSE version is outdated (v%.2f). This plugin requires v6.1 minimum.", s_nvseVersion);
 			return false;
@@ -153,7 +154,6 @@ extern "C" {
 	bool NVSEPlugin_Load(const NVSEInterface* nvse)
 	{
 		((NVSEMessagingInterface*)nvse->QueryInterface(kInterface_Messaging))->RegisterListener(nvse->GetPluginHandle(), "NVSE", MessageHandler);
-		//NiPointBuffer = (NiPoint3*)malloc(sizeof(NiPoint3));
 		char filename[MAX_PATH];
 		GetModuleFileNameA(NULL, filename, MAX_PATH);
 		strcpy((char*)(strrchr(filename, '\\') + 1), "Data\\nvse\\plugins\\JohnnyGuitar.ini");
@@ -164,6 +164,7 @@ extern "C" {
 		fixNPCShootingAngle = GetPrivateProfileInt("MAIN", "bFixNPCShootingAngle", 1, filename);
 		capLoadScreensTo60 = GetPrivateProfileInt("MAIN", "b60FPSDuringLoading", 0, filename);
 		noMuzzleFlashCooldown = GetPrivateProfileInt("MAIN", "bNoMuzzleFlashCooldown", 0, filename);
+		resetVanityCam = GetPrivateProfileInt("MAIN", "bReset3rdPersonCamera", 0, filename);
 		JGGameCamera.WorldMatrx = new JGWorldToScreenMatrix;
 		JGGameCamera.CamPos = new JGCameraPosition;
 		SaveGameUMap.reserve(0xFF);
@@ -335,6 +336,7 @@ extern "C" {
 		REG_CMD(FaceGenRefreshAppearance);
 		REG_CMD(SendTrespassAlarmAlt);
 		REG_CMD(IsCrimeOrEnemy);
+		REG_TYPED_CMD(GetAvailablePerks, Array);
 		g_scriptInterface = (NVSEScriptInterface*)nvse->QueryInterface(kInterface_Script);
 		g_cmdTableInterface = (NVSECommandTableInterface*)nvse->QueryInterface(kInterface_CommandTable);
 		s_strArgBuf = (char*)malloc((sizeof(char)) * 1024);
