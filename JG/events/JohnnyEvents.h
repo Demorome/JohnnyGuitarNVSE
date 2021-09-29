@@ -1,5 +1,5 @@
 #pragma once
-#include "CustomEventFilters.h"
+#include "JohnnyEventFilters.h" 
 #include "EventFilterStructs.h"
 
 DEFINE_COMMAND_ALT_PLUGIN(SetJohnnyOnDyingEventHandler, SetOnDyingEventHandler, , 0, 4, kParams_Event_OneForm);
@@ -37,7 +37,7 @@ void __fastcall handleRemovePerkEvent(Actor* actor, int EDX, BGSPerk* perk, bool
 		return;
 	for (auto const& callback : OnRemovePerkHandler->event_callbacks)
 	{
-		if (reinterpret_cast<GenericEventFilters*>(callback.eventFilter)->IsBaseInFilter(0, perk)) // 0 is filter one, and we only use an argument so we don't need to check further filters
+		if (callback.eventFilter->IsBaseInFilter(0, perk)) // 0 is filter one, and we only use an argument so we don't need to check further filters
 		{
 			FunctionCallScript(callback.ScriptForEvent, actor, 0, &EventResultPtr, OnRemovePerkHandler->num_max_args, perk);
 		}
@@ -83,8 +83,8 @@ UInt32 __fastcall handleCrosshairEvent(TESObjectREFR* crosshairRef) {
 
 bool __fastcall HandleLimbGoneEvent(ExtraDismemberedLimbs* xData, Actor* actor, byte dummy, int limb, byte isExplode) {
 	for (auto const& callback : OnLimbGoneHandler->event_callbacks) {
-		if (reinterpret_cast<GenericEventFilters*>(callback.eventFilter)->IsInFilter(0, actor) &&
-			reinterpret_cast<GenericEventFilters*>(callback.eventFilter)->IsInFilter(1, limb))
+		auto filter = callback.GetFilter();
+		if (filter->IsInFilter(0, actor) && filter->IsInFilter(1, limb))
 		{
 			FunctionCallScript(callback.ScriptForEvent, NULL, 0, &EventResultPtr, OnLimbGoneHandler->num_max_args, actor, limb);
 		}

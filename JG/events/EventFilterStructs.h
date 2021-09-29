@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "events/EventFilteringInterface.h"
+#include "EventFilteringInterface.h"
 
 struct EventFilter_Null : EventFilter_Base
 {

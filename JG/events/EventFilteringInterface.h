@@ -1,8 +1,6 @@
 #pragma once
 #include <variant>
 #include <unordered_set>
-#include "PluginAPI.h"
-#include "events/LambdaVariableContext.h"
 
 using RefID = UInt32;
 using FilterTypes = std::variant<RefID, int, float, std::string>;
@@ -42,48 +40,48 @@ static_assert(std::variant_size_v<FilterTypeSets> == std::variant_size_v<FilterT
 
 class EventHandlerFilterBase
 {
-public:
-	FilterTypeSetArray filtersArr;
-	
-	// The original filters array that was passed, before SetUpFiltering() was called.
-	// Costs more mem, but saves us from having to deep-check form-lists when checking IsGenFilterEqual().
-	FilterTypeSetArray genFiltersArr; 
-	
+	//== NOTE:
+	// The following private methods are used for implementing the filters on the JG side of things.
+	// There is no reason to use them if using the JG exports.
+	// END NOTE ==
+
 	// Framework passes the objects to add to filter here
 	virtual ~EventHandlerFilterBase() = default;
-	
+
 	// Used to filter out "-1" int codes, transform a form-list TESForm* into a bunch of TESForm*s, etc.
 	// Alternatively, can set up one's own data structures here.
 	virtual void SetUpFiltering() = 0;
 
-	// Checks if an object is in the filter, recommended to use a fast lookup data structure
-	virtual bool IsInFilter(UInt32 filterNum, FilterTypes toSearch) = 0;
-	
-	// Inserts the desired element to the Nth filter.
-	virtual bool InsertToFilter(UInt32 filterNum, FilterTypes toInsert) = 0;
-	
-	// Deletes an object from the Nth filter
-	virtual bool DeleteFromFilter(UInt32 filterNum, FilterTypes toDelete) = 0;
-	
-	// Returns if the filter is empty
-	virtual bool IsFilterEmpty(UInt32 filterNum) = 0;
-	
 	// Used by the framework to check if the Nth Gen filter equals the passed value set. Useful to avoid adding the same event repeatedly
-	virtual bool IsGenFilterEqual(UInt32 filterNum, FilterTypeSets const &cmpFilterSet) = 0;
-
+	virtual bool IsGenFilterEqual(UInt32 filterNum, FilterTypeSets const& cmpFilterSet) = 0;
+	
 	// Used to check if the Nth Gen filter equals the passed value set.
 	// ALL default-value Gen filters are said to be "equal".
 	// Useful to mass-remove events by using default filters.
-	virtual bool IsGenFilterEqualAlt(UInt32 filterNum, FilterTypeSets const &cmpFilterSet) = 0;
+	virtual bool IsGenFilterEqualAlt(UInt32 filterNum, FilterTypeSets const& cmpFilterSet) = 0;
 	
-	// Function used by the filter to check if the object passed is an accepted parameter
-	virtual bool IsAcceptedParameter(FilterTypes parameter) = 0;
-	
+public:
+
+
+	// Checks if an object is in the filter, recommended to use a fast lookup data structure
+	virtual bool IsInFilter(UInt32 filterNum, FilterTypes toSearch) = 0;
+
+	// Checks if the base form 
+	virtual bool IsBaseInFilter(UInt32 filterNum, RefID toSearch) = 0;
+
+	// Inserts the desired element to the Nth filter.
+	virtual bool InsertToFilter(UInt32 filterNum, FilterTypes toInsert) = 0;
+
+	// Deletes an element from the Nth filter
+	virtual bool DeleteFromFilter(UInt32 filterNum, FilterTypes toDelete) = 0;
+
+	// Returns if the filter is empty
+	virtual bool IsFilterEmpty(UInt32 filterNum) = 0;
+
 	// Hope a UInt32 is large enough.
-	virtual UInt32 GetNumFilters() { return filtersArr.size(); }
-	virtual UInt32 GetNumGenFilters() { return genFiltersArr.size(); }
-	
-	// numFilter is 0-indexed
+	virtual UInt32 GetNumFilters() = 0; // return filtersArr.size(); }
+	virtual UInt32 GetNumGenFilters() = 0; // { return genFiltersArr.size(); }
+
 	FilterTypeSets* GetNthFilter(UInt32 numFilter)
 	{
 		if (numFilter >= filtersArr.size()) return nullptr;
@@ -95,6 +93,7 @@ public:
 		return &genFiltersArr[numFilter];
 	}
 };
+
 
 // All event filters should inherit from this.
 // Used by EventInformation class to ensure that the declared filter type is the same when registering/removing events.

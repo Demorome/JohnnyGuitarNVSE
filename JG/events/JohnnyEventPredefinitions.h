@@ -1,7 +1,7 @@
 #pragma once
 #include <shared_mutex>
-#include "events/EventFilteringInterface.h"
-#include <unordered_set>
+#include "EventFilteringInterface.h"
+#include "JohnnyEventFilters.h"
 
 
 bool (*FunctionCallScript)(Script* funcScript, TESObjectREFR* callingObj, TESObjectREFR* container, NVSEArrayElement* result, UInt8 numArgs, ...);
@@ -56,7 +56,7 @@ public:
 	flagType const event_flags;
 	[[nodiscard]] EventFlags GetFlags() const { return (EventFlags)event_flags; }
 
-	BaseEventInformation(std::string eventName, UInt8 const& numMaxArgs, flagType flags, _FilterCreatorFunction FilterCreatorFunction)
+	BaseEventInformation(const char* eventName, UInt8 const& numMaxArgs, flagType flags, _FilterCreatorFunction FilterCreatorFunction)
 		: event_name{ std::move(eventName) }, num_max_args(numMaxArgs), event_flags(flags)
 	{
 		if (!FilterCreatorFunction)
@@ -91,8 +91,12 @@ class EventInformation : public BaseEventInformation
 		{
 			if (script == eventIter.ScriptForEvent)
 			{
-				if (!numMaxFilters) return kRetn_Return;	// filter-less event was already registered
-				if (!eventIter.eventFilter->GetNumGenFilters()) return kRetn_Continue;
+				if (!numMaxFilters) 
+					return kRetn_Return;	// filter-less event was already registered
+				
+				if (!eventIter.eventFilter->GetNumGenFilters()) 
+					return kRetn_Continue;
+				
 				for (int i = 0; i < numMaxFilters; i++)
 				{
 					if (!eventIter.eventFilter->IsGenFilterEqual(i, filters[i]))
@@ -106,14 +110,16 @@ class EventInformation : public BaseEventInformation
 		for (auto& callbackIter : event_callbacks)
 		{
 			auto const check = CheckFilterFunc(callbackIter);
-			if (check == kRetn_Return) return false;
+			if (check == kRetn_Return) 
+				return false;
 		}
 
 		std::shared_lock rLock(queue_rw_lock);
 		for (auto& eventQueueIter : event_queue_add)
 		{
 			auto const check = CheckFilterFunc(eventQueueIter);
-			if (check == kRetn_Return) return false;
+			if (check == kRetn_Return) 
+				return false;
 		}
 		rLock.unlock();
 
@@ -237,7 +243,6 @@ EventInformation<_Filter>* __cdecl JGCreateEvent(const char* eventName, UInt8 co
 	return eventInfo;
 }
 
-// Unused
 void __cdecl JGFreeEvent(EventInfo &toRemove)
 {
 	if (!toRemove) return;

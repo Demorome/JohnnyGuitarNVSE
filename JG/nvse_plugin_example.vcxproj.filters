@@ -22,6 +22,9 @@
     <Filter Include="misc">
       <UniqueIdentifier>{4714bb52-e742-43b4-9391-6acc122a3c7b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="events\Portable">
+      <UniqueIdentifier>{004ebbbe-61d1-4f10-9459-3acca4fbd8c8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\nvse\nvse\GameAPI.cpp">
@@ -161,10 +164,7 @@
     </ClInclude>
     <ClInclude Include="JohnnyGuitarNVSE.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="events\CustomEventFilters.h">
-      <Filter>events</Filter>
-    </ClInclude>
-    <ClInclude Include="events\EventFilteringInterface.h">
+    <ClInclude Include="events\JohnnyEventFilters.h">
       <Filter>events</Filter>
     </ClInclude>
     <ClInclude Include="events\JohnnyEventPredefinitions.h">
@@ -218,8 +218,11 @@
     <ClInclude Include="events\LambdaVariableContext.h">
       <Filter>events</Filter>
     </ClInclude>
+    <ClInclude Include="events\EventFilteringInterface.h">
+      <Filter>events\Portable</Filter>
+    </ClInclude>
     <ClInclude Include="events\EventFilterStructs.h">
-      <Filter>events</Filter>
+      <Filter>events\Portable</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

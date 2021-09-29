@@ -1,107 +1,7 @@
 #pragma once
-#include "GameForms.h"
+#include "GameObjects.h"	// for TESObjectREFR
 #include "GameRTTI.h"	// for DYNAMIC_CAST
-#include "events/EventFilteringInterface.h"
-
-#if NULL
-class JohnnyEventFiltersOneFormOneInt : EventHandlerFilterBase
-{
-
-
-	typedef  std::unordered_set<unsigned int> RefUnorderedSet;
-private:
-	RefUnorderedSet* Filters = nullptr;
-
-	RefUnorderedSet* GetNthFilter(UInt32 filter)
-	{
-		if (filter >= numFilters) return nullptr;
-		return &(Filters[filter]);
-	}
-public:
-
-	JohnnyEventFiltersOneFormOneInt(void** filters, UInt32 nuFilters)
-	{
-		numFilters = nuFilters;
-		Filters = new RefUnorderedSet[numFilters];
-		GenFilters = new GenericFilters[numFilters];
-		for (int i = 0; i < nuFilters; i++) GenFilters[i].ptr = filters[i];
-
-	}
-	virtual ~JohnnyEventFiltersOneFormOneInt()
-	{
-		delete[] Filters;
-		delete[] GenFilters;
-	}
-
-	virtual bool IsInFilter(UInt32 filterNum, GenericFilters toSearch)
-	{
-		RefUnorderedSet* FilterSet;
-		if (!(FilterSet = GetNthFilter(filterNum))) return false;
-		return  FilterSet->empty() || (FilterSet->find(toSearch.refID) != FilterSet->end());
-	}
-
-
-	virtual void InsertToFilter(UInt32 filterNum, GenericFilters toInsert)
-	{
-		RefUnorderedSet* FilterSet;
-		if (!(FilterSet = GetNthFilter(filterNum))) return;
-		FilterSet->insert(toInsert.refID);
-	}
-	virtual void DeleteFromFilter(UInt32 filterNum, GenericFilters toDelete)
-	{
-		RefUnorderedSet* FilterSet;
-		if (!(FilterSet = GetNthFilter(filterNum))) return;
-		FilterSet->erase(toDelete.refID);
-
-	}
-	virtual bool IsFilterEmpty(UInt32 filterNum)
-	{
-		RefUnorderedSet* FilterSet = GetNthFilter(filterNum);
-		if (!FilterSet) return true;
-		return FilterSet->empty();
-	}
-	virtual bool IsGenFilterEqual(GenericFilters Filter, UInt32 nuFilter)
-	{
-		return (Filter.ptr == GenFilters[nuFilter].ptr);
-	}
-	virtual bool IsAcceptedParameter(GenericFilters parameter)
-	{
-		return parameter.form->refID != 0x3B; // xMarker
-
-	}
-
-	virtual void SetUpFiltering()
-	{
-		if (GenFilters[1].intVal != -1) InsertToFilter(1, GenFilters[1].intVal);
-		TESForm* currentFilter = GenFilters[0].form;
-		if (!currentFilter) return;
-		if (IS_TYPE(currentFilter, BGSListForm))
-		{
-			ListNode<TESForm>* iterator = ((BGSListForm*)currentFilter)->list.Head();
-			do {
-				TESForm* it = iterator->data;
-				if (IsAcceptedParameter(it))
-					InsertToFilter(0, it->refID);
-			} while (iterator = iterator->next);
-
-		}
-		else if (IsAcceptedParameter(currentFilter)) InsertToFilter(0, currentFilter->refID);
-
-	}
-
-};
-void* __fastcall CreateOneFormOneIntFilter(void** Filters, UInt32 numFilters) {
-	return new JohnnyEventFiltersOneFormOneInt(Filters, numFilters);
-}
-#endif
-
-
-
-
-
-
-//== Demo's Generic Filter System
-
+#include "EventFilteringInterface.h"
 
 // Allow overloading lambda functions, used for std::visit on std::variants.
 // Taken from https://www.cppstories.com/2018/09/visit-variants/. Also shows up in https://gummif.github.io/blog/overloading_lambdas.html.
@@ -114,12 +14,18 @@ template<class... Ts> overload(Ts...)->overload<Ts...>;
 
 class GenericEventFilters : EventHandlerFilterBase
 {
+	FilterTypeSetArray filtersArr;
+
+	// The original filters array that was passed, before SetUpFiltering() was called.
+	// Costs more mem, but saves us from having to deep-check form-lists when checking IsGenFilterEqual().
+	FilterTypeSetArray genFiltersArr;
+
 public:
-	GenericEventFilters(FilterTypeSetArray &filters)
+	GenericEventFilters(const FilterTypeSetArray &filters)
 	{
 		filtersArr = genFiltersArr = filters;
 	}
-	GenericEventFilters(FilterTypeSets& filter)
+	GenericEventFilters(const FilterTypeSets& filter)
 	{
 		filtersArr = genFiltersArr = FilterTypeSetArray { filter };
 	}
@@ -164,7 +70,6 @@ public:
 		return IsInFilter(filterNum, toSearch);
 	}
 
-	// Unused
 	bool InsertToFilter(UInt32 const filterNum, FilterTypes toInsert) override
 	{
 		FilterTypeSets* filterSet;
@@ -179,7 +84,6 @@ public:
 		return isInserted;
 	}
 
-	// Unused
 	bool DeleteFromFilter(UInt32 const filterNum, FilterTypes toDelete) override
 	{
 		FilterTypeSets* filterSet;
@@ -198,7 +102,6 @@ public:
 		return isDeleted;
 	}
 
-	// Unused
 	bool IsFilterEmpty(UInt32 const filterNum) override
 	{
 		FilterTypeSets* filterSet;
@@ -250,17 +153,6 @@ public:
 			return false;
 		}, *filterSet, cmpFilterSet);
 		return isEqual;
-	}
-
-	//	Unused in SetUpFiltering, so it's useless.
-	bool IsAcceptedParameter(FilterTypes param) override
-	{
-	//	bool const isAccepted = std::visit(overload{
-	//		[&](RefID filter) { return filter != g_xMarkerID; },
-	//		[&](auto& filter) { return true; } /*Default case*/
-	//		}, param);
-	//	return isAccepted;
-		return true;
 	}
 
 	static RefIDSet SetUpFormFilters(RefIDSet const &refIDFilters)
