@@ -521,6 +521,7 @@ public:
 	virtual char *		GetName2(void);
 	virtual char *		GetName(void);
 	virtual bool		SetEditorID(const char * edid);		// simply returns true at run-time
+
 	// 4E
 	uint32_t GetId() const
 	{
