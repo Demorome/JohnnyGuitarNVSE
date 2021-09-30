@@ -66,8 +66,10 @@ public:
 	// Checks if an object is in the filter, recommended to use a fast lookup data structure
 	virtual bool IsInFilter(UInt32 filterNum, FilterTypes toSearch) = 0;
 
-	// Checks if the base form 
+	// Checks if the base form is in the form filter.
+	// Returns false if the filter is not form-type.
 	virtual bool IsBaseInFilter(UInt32 filterNum, RefID toSearch) = 0;
+	virtual bool IsBaseInFilter(UInt32 filterNum, TESForm* toSearch) = 0;
 
 	// Inserts the desired element to the Nth filter.
 	virtual bool InsertToFilter(UInt32 filterNum, FilterTypes toInsert) = 0;
@@ -93,6 +95,31 @@ public:
 		return &genFiltersArr[numFilter];
 	}
 };
+
+
+class EventContainerInterface
+{
+	using FlagType = uint16_t;
+
+public:
+	virtual ~EventContainerInterface() = default;
+
+	// Returns true/false if event was registered successfully (not a duplicate).
+	bool virtual RegisterEvent(Script* script, /*void***/ filters);
+
+	// Returns the amount of events that were cleared for the associated script.
+	size_t virtual RemoveEvent(Script* script, /*void***/ filters);
+
+	enum EventFlags : FlagType
+	{
+		eFlag_FlushOnLoad = 1 << 0,
+	};
+	[[nodiscard]] virtual EventFlags GetFlags() const = 0;
+};
+
+
+EventContainerInterface* (_cdecl* CreateEventHandler)(const char* EventName, UInt8 maxArgs, UInt8 maxFilters, void* (__fastcall* FilterConstructor)(void**, UInt32));
+void(__cdecl* FreeEventHandler)(EventContainerInterface*& toRemove);
 
 
 // All event filters should inherit from this.

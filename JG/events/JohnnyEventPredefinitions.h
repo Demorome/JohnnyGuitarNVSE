@@ -6,8 +6,13 @@
 
 bool (*FunctionCallScript)(Script* funcScript, TESObjectREFR* callingObj, TESObjectREFR* container, NVSEArrayElement* result, UInt8 numArgs, ...);
 NVSEArrayElement EventResultPtr;
+
+
+
 void* __fastcall GenericCreateFilters(FilterTypeSetArray &filters);
-using _FilterCreatorFunction = void* (__fastcall* )(FilterTypeSetArray& filters);	//todo: look into why ReSharper says this uses a reserved identifier...
+using _FilterCreatorFunction = void* (__fastcall* )(FilterTypeSetArray& filters);
+
+
 
 
 class BaseEventClass
@@ -36,7 +41,7 @@ public:
 };
 
 
-class BaseEventInformation
+class BaseEventInformation : public EventContainerInterface
 {
 public:
 	// Values are stored here for ease of accessibility from the outside.
@@ -48,16 +53,14 @@ public:
 	UInt8 const num_max_args;	// used when invoking script UDFs.
 	std::vector<BaseEventClass> event_callbacks;
 
-	using flagType = uint16_t;
-	enum EventFlags : flagType
+	FlagType const event_flags;
+	[[nodiscard]] EventFlags GetFlags() const override
 	{
-		eFlag_FlushOnLoad = 1 << 0,
-	};
-	flagType const event_flags;
-	[[nodiscard]] EventFlags GetFlags() const { return (EventFlags)event_flags; }
+		return (EventFlags)event_flags;
+	}
 
-	BaseEventInformation(const char* eventName, UInt8 const& numMaxArgs, flagType flags, _FilterCreatorFunction FilterCreatorFunction)
-		: event_name{ std::move(eventName) }, num_max_args(numMaxArgs), event_flags(flags)
+	BaseEventInformation(const char* eventName, UInt8 const& numMaxArgs, FlagType flags, _FilterCreatorFunction FilterCreatorFunction)
+		: event_name{ eventName }, num_max_args(numMaxArgs), event_flags(flags)
 	{
 		if (!FilterCreatorFunction)
 			filter_creator_func = GenericCreateFilters;
@@ -65,10 +68,9 @@ public:
 			filter_creator_func = FilterCreatorFunction;
 	}
 	
-	virtual ~BaseEventInformation() = default;
 	void virtual FlushEventCallbacks() = 0;
-	bool virtual RegisterEvent(Script* script, FilterTypeSetArray& filters) = 0;
-	void virtual RemoveEvent(Script* script, FilterTypeSetArray& filters) = 0;
+	//bool virtual RegisterEvent(Script* script, FilterTypeSetArray& filters) = 0;
+	//void virtual RemoveEvent(Script* script, FilterTypeSetArray& filters) = 0;
 	void virtual AddQueuedEvents() = 0;
 	void virtual DeleteEvents() = 0;
 };
@@ -141,8 +143,9 @@ class EventInformation : public BaseEventInformation
 		return RegisterEvent(script, arr);
 	}
 
-	void RemoveEvent(Script* script, FilterTypeSetArray& filters) override
+	size_t RemoveEvent(Script* script, FilterTypeSetArray& filters) override
 	{
+		size_t numRemovedEvents = 0;
 		auto it = event_callbacks.begin();
 		while (it != event_callbacks.end())
 		{
@@ -158,15 +161,17 @@ class EventInformation : public BaseEventInformation
 					}
 				}
 				it->SetDeleted(true);
+				numRemovedEvents++;
 			}
 		NotFound:
 			++it;
 		}
+		return numRemovedEvents;
 	}
-	void virtual RemoveEvent(Script* script, FilterTypeSets& filter)
+	size_t virtual RemoveEvent(Script* script, FilterTypeSets& filter)
 	{
 		FilterTypeSetArray arr{ filter };
-		RemoveEvent(script, arr);
+		return RemoveEvent(script, arr);
 	}
 	
 public:
@@ -192,10 +197,10 @@ public:
 		return RegisterEvent(script, filterSetArr);
 	}
 	
-	void virtual RemoveEvent(Script* script, _Filter &filter)
+	size_t virtual RemoveEvent(Script* script, _Filter &filter)
 	{
 		auto filterSetArr = filter.ToFilter();
-		RemoveEvent(script, filterSetArr);
+		return RemoveEvent(script, filterSetArr);
 	}
 	
 	void AddQueuedEvents() override
