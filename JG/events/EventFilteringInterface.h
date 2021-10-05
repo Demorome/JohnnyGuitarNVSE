@@ -39,6 +39,8 @@ struct JGEventHandlerInterface
 			kType_String
 		};
 
+		~FilterElem() { Reset(); }
+
 		FilterElem() : type(kType_Ptr), ptr(nullptr) { }
 		FilterElem(const char* _str) : type(kType_String) { str = CopyCString(_str); }
 		FilterElem(float _num) : fltVal(_num), type(kType_Float) { }
@@ -69,6 +71,8 @@ struct JGEventHandlerInterface
 		FilterType type;
 		size_t numElems;
 
+		void Reset() { if (type == kType_String) { FormHeap_Free(str); type = kType_Ptr; ptr = nullptr; } }
+
 	public:
 		union //FilterSetTypes
 		{
@@ -87,6 +91,8 @@ struct JGEventHandlerInterface
 			kType_FloatSet,
 			kType_StringSet
 		};
+
+		~FilterElemSet() { Reset(); }
 
 		FilterElemSet() : type(kType_PtrSet), numElems(0), ptrSet(nullptr) { }
 		/*
